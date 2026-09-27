@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 
 	echolib "github.com/labstack/echo/v4"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
@@ -61,12 +62,82 @@ func (m *middleware) wrap(next echolib.HandlerFunc) echolib.HandlerFunc {
 		}
 		// Security headers on the pass-through path: the engine computes the
 		// set (blocked verdicts already carry it), the adapter applies it
-		// before the handler writes its response.
-		for name, value := range m.engine.ResponseHeaders() {
+		// before the handler writes its response. CORS response headers are
+		// merged on top (the reference _inject_cors_headers runs after the
+		// security-header set, so CORS wins on a shared name) whenever the
+		// request carries an Origin and CORS is enabled.
+		headers := m.engine.ResponseHeaders()
+		for name, value := range m.engine.CORSResponseHeaders(req) {
+			headers[name] = value
+		}
+		for name, value := range headers {
 			c.Response().Header().Set(name, value)
 		}
-		return next(c)
+		// Behavioral return rules (route and global) run against the
+		// response the handler produced, exactly like the reference
+		// response factory's behavioral phase. The adapter captures the
+		// leading response body up to the configured inspect budget and
+		// hands status code plus captured prefix to the engine after the
+		// handler ran: return rules never modify the response.
+		capture := m.newBodyCapture()
+		if capture != nil {
+			c.Response().Writer = capture.wrap(c.Response().Writer)
+		}
+		err = next(c)
+		var observedBody []byte
+		if capture != nil {
+			observedBody = capture.body()
+		}
+		m.engine.ProcessResponse(req, &guardcore.Response{
+			StatusCode: c.Response().Status,
+			Headers:    map[string]string{},
+			Body:       observedBody,
+		})
+		return err
 	}
+}
+
+// bodyCapture records the leading bytes of the pass-through response body,
+// bounded by the engine's behavior_max_response_body_inspect_bytes budget,
+// and only when behavior_scan_response_body is enabled (with the flag off
+// the engine rejects every rule that would need the body, so there is
+// nothing to inspect).
+type bodyCapture struct {
+	budget int
+	buf    []byte
+}
+
+func (m *middleware) newBodyCapture() *bodyCapture {
+	if !m.engine.Config.BehaviorScanResponseBody {
+		return nil
+	}
+	budget := m.engine.Config.BehaviorMaxResponseBodyInspectBytes
+	if budget <= 0 {
+		return nil
+	}
+	return &bodyCapture{budget: budget}
+}
+
+func (c *bodyCapture) wrap(w http.ResponseWriter) http.ResponseWriter {
+	return &captureWriter{ResponseWriter: w, capture: c}
+}
+
+func (c *bodyCapture) body() []byte { return c.buf }
+
+type captureWriter struct {
+	http.ResponseWriter
+	capture *bodyCapture
+}
+
+func (w *captureWriter) Write(p []byte) (int, error) {
+	if remaining := w.capture.budget - len(w.capture.buf); remaining > 0 {
+		if len(p) < remaining {
+			w.capture.buf = append(w.capture.buf, p...)
+		} else {
+			w.capture.buf = append(w.capture.buf, p[:remaining]...)
+		}
+	}
+	return w.ResponseWriter.Write(p)
 }
 
 func (m *middleware) check(req guardcore.Request) (verdict *guardcore.Response, err error) {
