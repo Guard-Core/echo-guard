@@ -14,7 +14,7 @@ stops because the middleware returns without calling `next`.
 ## Installation
 
 ```bash
-go get github.com/rennf93/echo-guard@main github.com/rennf93/guard-core-go/v4@v4.1.0
+go get github.com/rennf93/echo-guard@v1.1.0 github.com/rennf93/guard-core-go/v4@v4.0.5-0.20260926230539-e39ac203568b
 ```
 
 Requires Go 1.25 or later.
