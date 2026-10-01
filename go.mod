@@ -1,10 +1,10 @@
 module github.com/rennf93/echo-guard
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/labstack/echo/v4 v4.15.4
-	github.com/rennf93/guard-core-go/v4 v4.2.0
+	github.com/rennf93/guard-core-go/v4 v4.3.0
 )
 
 require (
@@ -21,6 +21,6 @@ require (
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 )
