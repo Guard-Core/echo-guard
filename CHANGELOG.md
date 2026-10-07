@@ -3,6 +3,18 @@ Release Notes
 
 ___
 
+v1.3.1 (2026-10-07)
+-------------------
+
+echo/v4 dependency bump
+-----------------------
+
+### Changed
+
+- **Raised `github.com/labstack/echo/v4` to the patched release** (#24). Dependency-only: no engine, middleware, or config surface changes; the module floor and CI gates are unchanged.
+
+___
+
 v1.3.0 (2026-10-01)
 -------------------
 
