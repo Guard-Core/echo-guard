@@ -1,8 +1,8 @@
 # echo-guard advanced example
 
 A production-style Echo service guarded by the
-[echo-guard](https://github.com/rennf93/echo-guard) adapter over the
-[guard-core-go](https://github.com/rennf93/guard-core-go) engine: multi-stage
+[echo-guard](https://github.com/Guard-Core/echo-guard) adapter over the
+[guard-core-go](https://github.com/Guard-Core/guard-core-go) engine: multi-stage
 Docker build, non-root runtime, Redis for shared bans and rate limits, the
 engine's route registry for per-route config, echo route groups, and admin
 routes that drive the ban manager.
@@ -109,7 +109,7 @@ curl -s -X POST http://localhost:8080/admin/unban -H 'X-Admin-Token: admin-token
   `/admin/*`)
 - Cloud provider blocking (`BlockCloudProviders`, off by default)
 - `OnBlock` hook: the telemetry seam for
-  [guard-agent-go](https://github.com/rennf93/guard-agent-go) wiring
+  [guard-agent-go](https://github.com/Guard-Core/guard-agent-go) wiring
   (comment-level guidance in `internal/config/config.go`; `EnableAgent` is
   fail-closed in this port, so the hook is the integration point)
 

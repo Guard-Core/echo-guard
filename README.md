@@ -1,8 +1,8 @@
 # echo-guard
 
-Echo middleware adapter for [guard-core-go](https://github.com/rennf93/guard-core-go). Translates `echo.Context` into the guardcore request surface, runs the engine, and translates verdicts to exact Echo responses (status, headers, body, then stop the chain). Works with any `echo.Echo` or `echo.Group` chain via `e.Use`.
+Echo middleware adapter for [guard-core-go](https://github.com/Guard-Core/guard-core-go). Translates `echo.Context` into the guardcore request surface, runs the engine, and translates verdicts to exact Echo responses (status, headers, body, then stop the chain). Works with any `echo.Echo` or `echo.Group` chain via `e.Use`.
 
-Docs: <https://rennf93.github.io/echo-guard/>
+Docs: <https://guard-core.github.io/echo-guard/>
 
 ## Install
 

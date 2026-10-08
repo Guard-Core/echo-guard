@@ -1,8 +1,8 @@
 site_name: echo-guard
 site_description: guard-core-go security middleware for Echo
 site_author: Renn F
-repo_url: https://github.com/rennf93/echo-guard
-repo_name: rennf93/echo-guard
+repo_url: https://github.com/Guard-Core/echo-guard
+repo_name: Guard-Core/echo-guard
 
 theme:
   name: material
