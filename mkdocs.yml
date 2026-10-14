@@ -1,4 +1,5 @@
 site_name: echo-guard
+site_url: https://guard-core.github.io/echo-guard/
 site_description: guard-core-go security middleware for Echo
 site_author: Renn F
 repo_url: https://github.com/Guard-Core/echo-guard
