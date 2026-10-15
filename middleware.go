@@ -66,8 +66,9 @@ func (m *middleware) wrap(next echolib.HandlerFunc) echolib.HandlerFunc {
 		// merged on top (the reference _inject_cors_headers runs after the
 		// security-header set, so CORS wins on a shared name) whenever the
 		// request carries an Origin and CORS is enabled.
+		cors := m.engine.CORSResponseHeaders(req)
 		headers := m.engine.ResponseHeaders()
-		for name, value := range m.engine.CORSResponseHeaders(req) {
+		for name, value := range cors {
 			headers[name] = value
 		}
 		for name, value := range headers {
@@ -78,22 +79,55 @@ func (m *middleware) wrap(next echolib.HandlerFunc) echolib.HandlerFunc {
 		// response factory's behavioral phase. The adapter captures the
 		// leading response body up to the configured inspect budget and
 		// hands status code plus captured prefix to the engine after the
-		// handler ran: return rules never modify the response.
+		// handler ran: return rules never modify the response. With a
+		// CustomResponseModifier configured the whole response is held
+		// instead, so the modifier (the last step of the reference
+		// process_response) can rewrite it before it is sent.
+		origWriter := c.Response().Writer
+		var held *heldWriter
+		if m.engine.Config.CustomResponseModifier != nil {
+			held = &heldWriter{ResponseWriter: origWriter}
+			c.Response().Writer = held
+		}
 		capture := m.newBodyCapture()
-		if capture != nil {
-			c.Response().Writer = capture.wrap(c.Response().Writer)
+		if capture != nil && held == nil {
+			c.Response().Writer = capture.wrap(origWriter)
 		}
 		err = next(c)
+		// A handler error is turned into a response by Echo's
+		// HTTPErrorHandler, which normally runs after the whole middleware
+		// chain returned: c.Response().Status would still be the unwritten
+		// default and the engine would record a 200. Run the error handler
+		// here, as Echo's own logger middleware does, so the real status
+		// (and the held body, when a modifier is configured) exists first.
+		if err != nil {
+			c.Error(err)
+		}
 		var observedBody []byte
 		if capture != nil {
 			observedBody = capture.body()
+		}
+		if held != nil {
+			if held.hijacked {
+				return nil
+			}
+			if capture != nil {
+				observedBody = held.body
+				if len(observedBody) > capture.budget {
+					observedBody = observedBody[:capture.budget]
+				}
+			}
+			c.Response().Writer = origWriter
 		}
 		m.engine.ProcessResponse(req, &guardcore.Response{
 			StatusCode: c.Response().Status,
 			Headers:    map[string]string{},
 			Body:       observedBody,
 		})
-		return err
+		if held != nil {
+			held.release(m.engine, c.Response().Status, cors)
+		}
+		return nil
 	}
 }
 
