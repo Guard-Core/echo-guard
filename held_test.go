@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -30,9 +30,9 @@ func TestParityFlushInsideHeldResponseDoesNotPanic(t *testing.T) {
 	engine := newTestEngine(t, func(c *guardcore.SecurityConfig) {
 		c.CustomResponseModifier = func(resp *guardcore.Response) *guardcore.Response { return resp }
 	})
-	rec := serveWith(t, engine, func(c echolib.Context) error {
+	rec := serveWith(t, engine, func(c *echolib.Context) error {
 		_, _ = c.Response().Write([]byte("part"))
-		c.Response().Flush()
+		_ = http.NewResponseController(c.Response()).Flush()
 		return nil
 	}, httptest.NewRequest("GET", "/stream", nil))
 	if rec.Code != 200 || rec.Body.String() != "part" {
@@ -63,8 +63,8 @@ func TestParityHijackedResponseIsNotReleased(t *testing.T) {
 	}
 	router := echolib.New()
 	router.Use(guard)
-	router.Any("/*", func(c echolib.Context) error {
-		conn, _, err := c.Response().Hijack()
+	router.Any("/*", func(c *echolib.Context) error {
+		conn, _, err := http.NewResponseController(c.Response()).Hijack()
 		if err != nil {
 			return err
 		}

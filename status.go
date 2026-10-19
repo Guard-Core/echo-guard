@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -124,7 +124,7 @@ func NewStatusHandler(engine *guardcore.Engine) (echolib.HandlerFunc, error) {
 	if engine == nil {
 		return nil, errors.New("engine must not be nil")
 	}
-	return func(c echolib.Context) error {
+	return func(c *echolib.Context) error {
 		return c.JSON(http.StatusOK, initializationStatus(engine))
 	}, nil
 }

@@ -48,7 +48,7 @@ routeIDs := map[string]string{
 // Keys are echo route patterns (c.Path()), so parameterized routes map
 // cleanly.
 router.Use(func(next echolib.HandlerFunc) echolib.HandlerFunc {
-    return func(c echolib.Context) error {
+    return func(c *echolib.Context) error {
         if routeID, ok := routeIDs[c.Path()]; ok {
             c.SetRequest(c.Request().WithContext(guardecho.WithRouteID(c.Request().Context(), routeID)))
         }

@@ -3,6 +3,24 @@ Release Notes
 
 ___
 
+v2.0.0 (unreleased)
+-------------------
+
+Echo v5 support as the `/v2` module
+-----------------------------------
+
+### Changed
+
+- **Echo v5 support; module path `github.com/rennf93/echo-guard/v2`; Echo v4 users stay on v1.x.** The adapter now targets `github.com/labstack/echo/v5 v5.4.0`. Go's semantic import versioning requires the `/v2` suffix because the public types change (`echo.MiddlewareFunc`, `echo.HandlerFunc` and `echo.Context` are different types in v5). Import the adapter as `github.com/rennf93/echo-guard/v2` (keep an alias such as `guardecho`, the package name is still `echo`). Echo v4 applications keep using `github.com/rennf93/echo-guard` v1.x, which stays on `echo/v4`. The engine floor is unchanged (`github.com/rennf93/guard-core-go/v4 v4.4.0`) and the adapter behavior is identical: exact verdict translation, fail-closed 500, bounded body replay, route identity from the request context, `RemoteAddr` as the only client host.
+- **Forced signature changes** (every other exported identifier is unchanged):
+  - `New(engine, opts...)` returns `echo.MiddlewareFunc` of Echo v5 (`func(next HandlerFunc) HandlerFunc` over `func(c *echo.Context) error`).
+  - `GuardWebSocket(engine, c)` takes `*echo.Context` instead of the v4 `echo.Context` interface.
+  - `NewStatusHandler(engine)` returns Echo v5's `echo.HandlerFunc` (`func(c *echo.Context) error`).
+  - `AddStatusRoute(app, engine, path)` takes Echo v5's `*echo.Echo`.
+- **Behavior notes for the v5 port.** Echo v5 removed `c.Error` and exposes the response as an `http.ResponseWriter`: a handler error is turned into a response through `c.Echo().HTTPErrorHandler`, and the adapter reaches the `*echo.Response` with `echo.UnwrapResponse` to swap the capture and held writers underneath it, as v4 did through `Response.Writer`. A context whose response writer chain never reaches an `*echo.Response`, or a handler error on a context without an Echo instance, fails closed with the 500 `Security check failed` response.
+
+___
+
 v1.5.0 (2026-10-16)
 -------------------
 

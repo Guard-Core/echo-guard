@@ -14,12 +14,12 @@ stops because the middleware returns without calling `next`.
 ## Installation
 
 ```bash
-go get github.com/rennf93/echo-guard@v1.1.0 github.com/rennf93/guard-core-go/v4@v4.0.5-0.20260926230539-e39ac203568b
+go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.0
 ```
 
-Requires Go 1.25 or later.
+Requires Go 1.25 or later and Echo v5 (`github.com/labstack/echo/v5`). Echo v4 users stay on `github.com/rennf93/echo-guard` v1.x.
 
-The package name is `echo`, which collides with `github.com/labstack/echo/v4`
+The package name is `echo`, which collides with `github.com/labstack/echo/v5`
 (also package `echo`), so import the adapter with an explicit alias such as
 `guardecho`.
 
@@ -31,9 +31,9 @@ package main
 import (
 	"log"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	guardcore "github.com/rennf93/guard-core-go/v4/guardcore"
-	guardecho "github.com/rennf93/echo-guard"
+	guardecho "github.com/rennf93/echo-guard/v2"
 )
 
 func main() {
@@ -53,7 +53,7 @@ func main() {
 
 	router := echolib.New()
 	router.Use(guard)
-	router.GET("/", func(c echolib.Context) error {
+	router.GET("/", func(c *echolib.Context) error {
 		return c.String(200, "ok")
 	})
 

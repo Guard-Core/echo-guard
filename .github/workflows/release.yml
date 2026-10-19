@@ -12,7 +12,7 @@ name: Release Gate
 # can only run once the tag exists.
 #
 # Re-check: run this workflow by hand (Actions > Release Gate > Run workflow)
-# with the tag, for example v1.5.0. It checks out that tag, so a fixed
+# with the tag, for example v2.0.0. It checks out that tag, so a fixed
 # workflow on the default branch can re-check an existing tag.
 on:
   push:
@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to check, for example v1.5.0'
+        description: 'Release tag to check, for example v2.0.0'
         required: true
 
 permissions: {}
@@ -58,7 +58,7 @@ jobs:
             tag="$REF_NAME"
           fi
           if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::tag '$tag' is not of the form v1.2.3"
+            echo "::error::tag '$tag' is not of the form v2.0.0"
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -119,7 +119,7 @@ jobs:
 
       - name: Verify module tag resolves
         env:
-          MODULE: github.com/rennf93/echo-guard
+          MODULE: github.com/rennf93/echo-guard/v2
           TAG: ${{ needs.verify.outputs.tag }}
         run: |
           cd "$(mktemp -d)"

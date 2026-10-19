@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -39,7 +39,7 @@ func serveWithRouteID(t *testing.T, engine *guardcore.Engine, routeID, target st
 	}
 	router := echolib.New()
 	router.Use(func(next echolib.HandlerFunc) echolib.HandlerFunc {
-		return func(c echolib.Context) error {
+		return func(c *echolib.Context) error {
 			if routeID != "" {
 				c.SetRequest(c.Request().WithContext(WithRouteID(c.Request().Context(), routeID)))
 			}
@@ -47,7 +47,7 @@ func serveWithRouteID(t *testing.T, engine *guardcore.Engine, routeID, target st
 		}
 	})
 	router.Use(guard)
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		body := "handler-body"
 		if len(handlerBody) > 0 {
 			body = handlerBody[0]
@@ -127,7 +127,7 @@ func TestReachabilityGlobalReturnPatternBodyScan(t *testing.T) {
 	}
 	router := echolib.New()
 	router.Use(guard)
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		big := make([]byte, 2048)
 		for i := range big {
 			big[i] = 'a'
@@ -164,7 +164,7 @@ func TestReachabilityStatusReturnPatternWithoutScan(t *testing.T) {
 	// The handler writes the 404 itself (instead of returning an Echo
 	// HTTPError) so the adapter observes the status while the middleware
 	// still runs; see the docs note on error-returning handlers.
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		c.Response().WriteHeader(http.StatusNotFound)
 		_, _ = c.Response().Write([]byte("missing"))
 		return nil
@@ -267,7 +267,7 @@ func TestReachabilityCORS(t *testing.T) {
 	})
 	router := echolib.New()
 	router.Use(guard)
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		_, _ = c.Response().Write([]byte("ok"))
 		return nil
 	})

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -46,7 +46,7 @@ func serveBlocked(t *testing.T, guard echolib.MiddlewareFunc, r *http.Request) *
 	t.Helper()
 	router := echolib.New()
 	router.Use(guard)
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		t.Fatal("blocked request must not reach the handler")
 		return nil
 	})
@@ -88,7 +88,7 @@ func TestIntegrationMiddlewareStartupWiringAcrossEngines(t *testing.T) {
 	allowed.RemoteAddr = "203.0.113.62:4711"
 	router := echolib.New()
 	router.Use(secondGuard)
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
 	rec = httptest.NewRecorder()

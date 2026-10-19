@@ -93,7 +93,7 @@ curl -s -X POST http://localhost:8080/admin/unban -H 'X-Admin-Token: admin-token
   `TrustXForwardedProto` in `internal/config`. None are set here because this
   compose stack has no reverse proxy in front.
 - The package name is `echo`, which collides with
-  `github.com/labstack/echo/v4`, so the adapter is imported with an explicit
+  `github.com/labstack/echo/v5`, so the adapter is imported with an explicit
   alias (`guardecho`).
 
 ## Configuration knobs demonstrated
@@ -153,7 +153,7 @@ curl -s -X POST http://localhost:8080/admin/unban -H 'X-Admin-Token: admin-token
 ## Module layout note
 
 Both example apps live inside the root module
-(`github.com/rennf93/echo-guard/examples/...`) rather than in separate Go
+(`github.com/rennf93/echo-guard/v2/examples/...`) rather than in separate Go
 modules or a `go.work` workspace. Rationale: the examples pin the exact
 adapter they document (same module, same commit), so `go vet ./...` and
 `go build ./...` gate them together with the adapter in CI and the

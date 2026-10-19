@@ -2,6 +2,7 @@ package echo
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -9,15 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
 const xssVector = "q=<script>alert(1)</script>"
-
-func init() {
-	echolib.New().Logger.SetOutput(io.Discard)
-}
 
 type probe struct {
 	called   bool
@@ -60,7 +57,7 @@ func serve(t *testing.T, guard echolib.MiddlewareFunc, r *http.Request) (*httpte
 	p := &probe{}
 	router := echolib.New()
 	router.Use(guard)
-	router.Any("/*", func(c echolib.Context) error {
+	router.Any("/*", func(c *echolib.Context) error {
 		p.called = true
 		p.headers = c.Response().Header().Clone()
 		p.body, _ = io.ReadAll(c.Request().Body)
@@ -74,7 +71,7 @@ func serve(t *testing.T, guard echolib.MiddlewareFunc, r *http.Request) (*httpte
 	return rec, p
 }
 
-func newShimContext(r *http.Request) echolib.Context {
+func newShimContext(r *http.Request) *echolib.Context {
 	return echolib.New().NewContext(r, httptest.NewRecorder())
 }
 
@@ -520,5 +517,38 @@ func TestMiddlewareInvalidOptionsIgnored(t *testing.T) {
 	rec, p := serve(t, guard, r)
 	if rec.Code != 200 || !p.called {
 		t.Fatalf("middleware with defaults must pass clean traffic, got %d called=%v", rec.Code, p.called)
+	}
+}
+
+// Echo v5 exposes the response as a plain http.ResponseWriter: a context whose
+// writer chain never reaches an echo.Response cannot be observed, so the
+// middleware fails closed instead of letting the handler run unobserved.
+type opaqueWriter struct{ http.ResponseWriter }
+
+func TestMiddlewareFailsClosedWithoutEchoResponse(t *testing.T) {
+	guard, _ := newTestMiddleware(t, nil)
+	rec := httptest.NewRecorder()
+	c := echolib.NewContext(httptest.NewRequest("GET", "/api", nil), rec)
+	c.SetResponse(opaqueWriter{rec})
+	called := false
+	if err := guard(func(*echolib.Context) error { called = true; return nil })(c); err != nil {
+		t.Fatalf("fail-closed must not surface an error, got %v", err)
+	}
+	if called || rec.Code != 500 || rec.Body.String() != failClosedMessage {
+		t.Fatalf("expected fail-closed 500 without calling the handler, got %d %q called=%v", rec.Code, rec.Body.String(), called)
+	}
+}
+
+// A context built without an Echo instance (echolib.NewContext) has no
+// HTTPErrorHandler: a handler error fails closed with the engine's 500.
+func TestMiddlewareHandlerErrorWithoutEchoInstanceFailsClosed(t *testing.T) {
+	guard, _ := newTestMiddleware(t, nil)
+	rec := httptest.NewRecorder()
+	c := echolib.NewContext(httptest.NewRequest("GET", "/api", nil), rec)
+	if err := guard(func(*echolib.Context) error { return errors.New("boom") })(c); err != nil {
+		t.Fatalf("handler errors are turned into a response, got %v", err)
+	}
+	if rec.Code != 500 || rec.Body.String() != failClosedMessage {
+		t.Fatalf("expected the fail-closed 500, got %d %q", rec.Code, rec.Body.String())
 	}
 }

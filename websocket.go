@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -26,7 +26,7 @@ import (
 // the penetration detection pass sharing the HTTP pipeline's suspicious
 // counts. A nil result allows the upgrade; a non-nil reason closes it. A
 // nil engine fails closed with the security-check-failed reason.
-func GuardWebSocket(engine *guardcore.Engine, c echolib.Context) *guardcore.WebSocketCloseReason {
+func GuardWebSocket(engine *guardcore.Engine, c *echolib.Context) *guardcore.WebSocketCloseReason {
 	if engine == nil || c == nil {
 		reason := guardcore.WSCloseSecurityCheckFailed
 		return &reason
