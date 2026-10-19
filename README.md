@@ -152,10 +152,10 @@ ___
 
 ## Install
 
-Echo v5 support is the `/v2` module (unreleased 2.0.0), flooring the guard-core-go v4.4.0 reference-alignment engine. Echo v4 users stay on v1.x (`go get github.com/rennf93/echo-guard@v1.5.0`):
+Echo v5 support is the `/v2` module (v2.0.0), on guard-core-go v4.4.1. Echo v4 users stay on v1.x (`go get github.com/rennf93/echo-guard@v1.5.0`):
 
 ```
-go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.0
+go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.1
 ```
 
 The package name is `echo`, which collides with `github.com/labstack/echo/v5` (also package `echo`), so import the adapter with an explicit alias such as `guardecho`.
@@ -206,7 +206,7 @@ Echo's middleware contract has no explicit abort call: a verdict is written to `
 
 ## Development
 
-The middleware consumes the core as a normal module dependency, currently pinned to guard-core-go `v4.4.0`; no `replace` directive is used or needed. For cross-repo work on the core itself, add a temporary local `replace` line in your own checkout and drop it before committing.
+The middleware consumes the core as a normal module dependency, currently pinned to guard-core-go `v4.4.1`; no `replace` directive is used or needed. For cross-repo work on the core itself, add a temporary local `replace` line in your own checkout and drop it before committing.
 
 Integration tests run against real Redis:
 

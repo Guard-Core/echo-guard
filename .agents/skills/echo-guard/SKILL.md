@@ -5,7 +5,7 @@ description: Use when wiring guard-core-go security into a Go Echo service, or w
 
 # echo-guard
 
-Echo middleware adapter for [guard-core-go](https://github.com/Guard-Core/guard-core-go). Translates `echo.Context` into the guardcore request surface, runs the engine, and translates verdicts to exact Echo responses (status, headers, body, then stop the chain). Contains no security logic itself. Module: `github.com/rennf93/echo-guard/v2`, Go `1.25.0`, Echo v5 (unreleased 2.0.0; Echo v4 users stay on the v1.x line).
+Echo middleware adapter for [guard-core-go](https://github.com/Guard-Core/guard-core-go). Translates `echo.Context` into the guardcore request surface, runs the engine, and translates verdicts to exact Echo responses (status, headers, body, then stop the chain). Contains no security logic itself. Module: `github.com/rennf93/echo-guard/v2`, Go `1.26.0`, Echo v5 (v2.0.0; Echo v4 users stay on the v1.x line).
 
 ## Quick Reference
 
@@ -22,7 +22,7 @@ Behavior contract: the engine sees at most `MaxBodyBytes` of the body prefix; pa
 ## Installation
 
 ```sh
-go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.0
+go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.1
 ```
 
 The package name is `echo`, which collides with `github.com/labstack/echo/v5`, so import the adapter with an alias:

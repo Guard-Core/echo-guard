@@ -7,7 +7,7 @@ echo-guard is an Echo middleware adapter for [guard-core-go](https://github.com/
 
 - Module: `github.com/rennf93/echo-guard/v2`, Go directive `go 1.26.0` (echo v5.4.0 itself needs 1.25.0), MIT license.
 - Single Go package `echo` at the repo root. Source files: `middleware.go`, `request.go`. Tests: `middleware_test.go`, `integration_test.go`. There are no subpackage directories.
-- Release state: v1.x targets Echo v4 (last release v1.5.0). This branch is the Echo v5 line, module `github.com/rennf93/echo-guard/v2`, unreleased 2.0.0 (see `CHANGELOG.md`). Echo v4 users stay on v1.x.
+- Release state: v1.x targets Echo v4 (last release v1.5.0). This branch is the Echo v5 line, module `github.com/rennf93/echo-guard/v2`, released as v2.0.0 (see `CHANGELOG.md`). Echo v4 users stay on v1.x.
 - Echo v5 notes: `echo.Context` is a concrete struct, so handlers and middleware take `*echo.Context`; `c.Response()` returns an `http.ResponseWriter` (the `*echo.Response` is reached with `echo.UnwrapResponse`); `c.Error` is gone (the error handler is `c.Echo().HTTPErrorHandler`).
 - The public surface is small and deliberate: `New`, `Option`, `WithMaxBodyBytes`, `WithLogger`, `WithRouteID`, and the `DefaultMaxBodyBytes` constant (262144).
 
@@ -16,9 +16,9 @@ echo-guard is an Echo middleware adapter for [guard-core-go](https://github.com/
 This repo is the ADAPTER layer of the guard-core ecosystem:
 
 - `guard-core-go` is the engine. All detection (suspicious activity, IP bans, rate limits, HTTPS enforcement), verdict construction, and error response factories live there.
-- This repo wires Go Echo types to that engine and nothing more. It consumes `github.com/rennf93/guard-core-go/v4 v4.4.0` as a normal module dependency (see `go.mod`); no `replace` directive is used or needed. For cross-repo work on the core, add a temporary local `replace` in your own checkout and drop it before committing.
+- This repo wires Go Echo types to that engine and nothing more. It consumes `github.com/rennf93/guard-core-go/v4 v4.4.1` as a normal module dependency (see `go.mod`); no `replace` directive is used or needed. For cross-repo work on the core, add a temporary local `replace` in your own checkout and drop it before committing.
 - Because the middleware is an `echo.MiddlewareFunc`, it composes with `e.Use` and runs anywhere in an Echo handler chain. Echo has no explicit abort call: a verdict is written to `c.Response()` and the chain stops because the middleware returns nil without calling `next(c)`.
-- Direct dependencies: `github.com/labstack/echo/v5 v5.4.0` (the framework this adapter exists for; a framework import is allowed here, unlike in the core) and `github.com/rennf93/guard-core-go/v4 v4.4.0`. Notable indirect floors: the core's transitives (`redis/go-redis/v9 v9.22.0`, `dlclark/regexp2 v1.12.0`, `go.uber.org/atomic`, `golang.org/x/text v0.41.0`) plus echo's own (`golang.org/x/crypto v0.53.0`, `golang.org/x/net v0.56.0`). govulncheck reports zero vulnerabilities reachable from this module's code; the module-level findings in `x/crypto/ssh` and `x/crypto/openpgp` are never called here, so no floor bump was needed (unlike gin-guard's quic-go bump for GO-2026-5676).
+- Direct dependencies: `github.com/labstack/echo/v5 v5.4.0` (the framework this adapter exists for; a framework import is allowed here, unlike in the core) and `github.com/rennf93/guard-core-go/v4 v4.4.1`. Notable indirect floors: the core's transitives (`redis/go-redis/v9 v9.22.0`, `dlclark/regexp2 v1.12.0`, `go.uber.org/atomic`, `golang.org/x/text v0.41.0`) plus echo's own (`golang.org/x/crypto v0.53.0`, `golang.org/x/net v0.56.0`). govulncheck reports zero vulnerabilities reachable from this module's code; the module-level findings in `x/crypto/ssh` and `x/crypto/openpgp` are never called here, so no floor bump was needed (unlike gin-guard's quic-go bump for GO-2026-5676).
 
 ## Boundary Rules
 
@@ -96,7 +96,7 @@ CI runs the test job on Go `1.26.x` (a one-entry matrix, fail-fast disabled) wit
 ├── request.go           # requestShim (implements guardcore.Request), WithRouteID, DefaultMaxBodyBytes, replayBody
 ├── middleware_test.go   # unit tests, real echo.Echo, Redis disabled
 ├── integration_test.go  # //go:build integration, Redis-backed, skips when REDIS_HOST is unset
-├── go.mod / go.sum      # module github.com/rennf93/echo-guard/v2, requires echo v5.4.0 and guard-core-go/v4 v4.4.0
+├── go.mod / go.sum      # module github.com/rennf93/echo-guard/v2, requires echo v5.4.0 and guard-core-go/v4 v4.4.1
 ├── README.md            # usage, options, integration test instructions
 ├── LICENSE              # MIT
 ├── mkdocs.yml           # MkDocs site config (material theme; nav: Home/Usage/Configuration)
@@ -127,7 +127,7 @@ CI runs the test job on Go `1.26.x` (a one-entry matrix, fail-fast disabled) wit
 ## Technology Stack
 
 - Go, directive `go 1.26.0`; CI runs the test job on 1.26.x.
-- `github.com/rennf93/guard-core-go/v4 v4.4.0` (direct require in `go.mod`), providing `guardcore.Engine`, `guardcore.Request`, `guardcore.Response`, `guardcore.SecurityConfig`.
+- `github.com/rennf93/guard-core-go/v4 v4.4.1` (direct require in `go.mod`), providing `guardcore.Engine`, `guardcore.Request`, `guardcore.Response`, `guardcore.SecurityConfig`.
 - `github.com/labstack/echo/v5 v5.4.0` (direct require in `go.mod`), providing `echo.MiddlewareFunc` and `echo.Context` for the bridging surface.
 - Redis 7 for integration tests (CI service container `redis:7-alpine`); runtime Redis usage is a guard-core-go concern, not this adapter's.
 - GitHub Actions: CI on push and pull_request, Release Gate on `v*` tag push, weekly Scheduled Lint, CodeQL (go), dockerized Live Smoke of the example apps on push/PR to master, MkDocs docs deploy to GitHub Pages on docs pushes to master, demo container publishing to ghcr.io on releases and examples changes, daily upstream drift tests against guard-core-go@master, issue-link, greetings, labeler, stale, summary, and label sync; Dependabot for gomod and actions. All workflows use minimal permissions and pinned action SHAs.
