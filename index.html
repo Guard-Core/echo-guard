@@ -490,10 +490,10 @@ translates <code>echo.Context</code> into <code>guardcore.Request</code>, runs t
 writes the block verdict (status, headers, body) when one arrives; the chain
 stops because the middleware returns without calling <code>next</code>.</p>
 <h2 id="installation">Installation</h2>
-<div class="highlight"><pre><span></span><code>go<span class="w"> </span>get<span class="w"> </span>github.com/rennf93/echo-guard@v1.1.0<span class="w"> </span>github.com/rennf93/guard-core-go/v4@v4.0.5-0.20260926230539-e39ac203568b
+<div class="highlight"><pre><span></span><code>go<span class="w"> </span>get<span class="w"> </span>github.com/rennf93/echo-guard/v2@v2.0.0<span class="w"> </span>github.com/rennf93/guard-core-go/v4@v4.4.1
 </code></pre></div>
-<p>Requires Go 1.25 or later.</p>
-<p>The package name is <code>echo</code>, which collides with <code>github.com/labstack/echo/v4</code>
+<p>Requires Go 1.25 or later and Echo v5 (<code>github.com/labstack/echo/v5</code>). Echo v4 users stay on <code>github.com/rennf93/echo-guard</code> v1.x.</p>
+<p>The package name is <code>echo</code>, which collides with <code>github.com/labstack/echo/v5</code>
 (also package <code>echo</code>), so import the adapter with an explicit alias such as
 <code>guardecho</code>.</p>
 <h2 id="quick-start">Quick start</h2>
@@ -502,9 +502,9 @@ stops because the middleware returns without calling <code>next</code>.</p>
 <span class="kn">import</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="s">"log"</span>
 
-<span class="w">    </span><span class="nx">echolib</span><span class="w"> </span><span class="s">"github.com/labstack/echo/v4"</span>
+<span class="w">    </span><span class="nx">echolib</span><span class="w"> </span><span class="s">"github.com/labstack/echo/v5"</span>
 <span class="w">    </span><span class="nx">guardcore</span><span class="w"> </span><span class="s">"github.com/rennf93/guard-core-go/v4/guardcore"</span>
-<span class="w">    </span><span class="nx">guardecho</span><span class="w"> </span><span class="s">"github.com/rennf93/echo-guard"</span>
+<span class="w">    </span><span class="nx">guardecho</span><span class="w"> </span><span class="s">"github.com/rennf93/echo-guard/v2"</span>
 <span class="p">)</span>
 
 <span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
@@ -524,7 +524,7 @@ stops because the middleware returns without calling <code>next</code>.</p>
 
 <span class="w">    </span><span class="nx">router</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">echolib</span><span class="p">.</span><span class="nx">New</span><span class="p">()</span>
 <span class="w">    </span><span class="nx">router</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">guard</span><span class="p">)</span>
-<span class="w">    </span><span class="nx">router</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">c</span><span class="w"> </span><span class="nx">echolib</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">router</span><span class="p">.</span><span class="nx">GET</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="nx">echolib</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nx">String</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="s">"ok"</span><span class="p">)</span>
 <span class="w">    </span><span class="p">})</span>
 
