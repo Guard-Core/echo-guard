@@ -78,7 +78,7 @@ Inline comments in `main.go` walk through every knob used:
 ## Echo notes
 
 - Import the adapter with an explicit alias: the package name is `echo`,
-  which collides with `github.com/labstack/echo/v4` (also package `echo`);
+  which collides with `github.com/labstack/echo/v5` (also package `echo`);
   `guardecho` is the idiomatic alias.
 - `guardecho.New(engine)` returns an `echo.MiddlewareFunc`, so it composes
   with `e.Use` and can sit anywhere in a chain. Keep it as early as possible
@@ -101,7 +101,7 @@ Inline comments in `main.go` walk through every knob used:
 ## Module layout note
 
 Both example apps live inside the root module
-(`github.com/rennf93/echo-guard/examples/...`) rather than in separate Go
+(`github.com/rennf93/echo-guard/v2/examples/...`) rather than in separate Go
 modules or a `go.work` workspace. Rationale: the examples pin the exact
 adapter they document (same module, same commit), so `go vet ./...` and
 `go build ./...` gate them together with the adapter in CI and the

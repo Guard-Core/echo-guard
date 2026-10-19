@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -48,7 +48,7 @@ func New(engine *guardcore.Engine, opts ...Option) (echolib.MiddlewareFunc, erro
 }
 
 func (m *middleware) wrap(next echolib.HandlerFunc) echolib.HandlerFunc {
-	return func(c echolib.Context) error {
+	return func(c *echolib.Context) error {
 		req := newRequestShim(c, m.maxBytes)
 		verdict, err := m.check(req)
 		if err != nil {
@@ -83,25 +83,34 @@ func (m *middleware) wrap(next echolib.HandlerFunc) echolib.HandlerFunc {
 		// CustomResponseModifier configured the whole response is held
 		// instead, so the modifier (the last step of the reference
 		// process_response) can rewrite it before it is sent.
-		origWriter := c.Response().Writer
+		// Echo v5 hands out an http.ResponseWriter: the writers are swapped
+		// underneath the echo.Response, as v4 did through Response.Writer, so
+		// its Status and Committed bookkeeping keeps working.
+		echoResponse, err := echolib.UnwrapResponse(c.Response())
+		if err != nil {
+			m.logger.Printf("guardcore echo: response writer is not an echo response, failing closed: %v", err)
+			applyResponse(c, m.engine.CreateErrorResponse(500, failClosedMessage))
+			return nil
+		}
+		origWriter := echoResponse.ResponseWriter
 		var held *heldWriter
 		if m.engine.Config.CustomResponseModifier != nil {
 			held = &heldWriter{ResponseWriter: origWriter}
-			c.Response().Writer = held
+			echoResponse.ResponseWriter = held
 		}
 		capture := m.newBodyCapture()
 		if capture != nil && held == nil {
-			c.Response().Writer = capture.wrap(origWriter)
+			echoResponse.ResponseWriter = capture.wrap(origWriter)
 		}
 		err = next(c)
 		// A handler error is turned into a response by Echo's
 		// HTTPErrorHandler, which normally runs after the whole middleware
-		// chain returned: c.Response().Status would still be the unwritten
+		// chain returned: echoResponse.Status would still be the unwritten
 		// default and the engine would record a 200. Run the error handler
 		// here, as Echo's own logger middleware does, so the real status
 		// (and the held body, when a modifier is configured) exists first.
 		if err != nil {
-			c.Error(err)
+			m.handleError(c, err)
 		}
 		var observedBody []byte
 		if capture != nil {
@@ -117,15 +126,15 @@ func (m *middleware) wrap(next echolib.HandlerFunc) echolib.HandlerFunc {
 					observedBody = observedBody[:capture.budget]
 				}
 			}
-			c.Response().Writer = origWriter
+			echoResponse.ResponseWriter = origWriter
 		}
 		m.engine.ProcessResponse(req, &guardcore.Response{
-			StatusCode: c.Response().Status,
+			StatusCode: echoResponse.Status,
 			Headers:    map[string]string{},
 			Body:       observedBody,
 		})
 		if held != nil {
-			held.release(m.engine, c.Response().Status, cors)
+			held.release(m.engine, echoResponse.Status, cors)
 		}
 		return nil
 	}
@@ -174,6 +183,20 @@ func (w *captureWriter) Write(p []byte) (int, error) {
 	return w.ResponseWriter.Write(p)
 }
 
+// handleError is Echo v4's c.Error: v5 dropped the method, the error handler
+// is reached through the Echo instance (the pattern echo's request logger
+// middleware uses). v5's default handler cannot answer without an Echo
+// instance (no JSON serializer), so such a context fails closed with the
+// engine's 500 response.
+func (m *middleware) handleError(c *echolib.Context, err error) {
+	if app := c.Echo(); app != nil && app.HTTPErrorHandler != nil {
+		app.HTTPErrorHandler(c, err)
+		return
+	}
+	m.logger.Printf("guardcore echo: no echo error handler for handler error, failing closed: %v", err)
+	applyResponse(c, m.engine.CreateErrorResponse(500, failClosedMessage))
+}
+
 func (m *middleware) check(req guardcore.Request) (verdict *guardcore.Response, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -183,7 +206,7 @@ func (m *middleware) check(req guardcore.Request) (verdict *guardcore.Response, 
 	return m.engine.Check(req), nil
 }
 
-func applyResponse(c echolib.Context, response *guardcore.Response) {
+func applyResponse(c *echolib.Context, response *guardcore.Response) {
 	for name, value := range response.Headers {
 		c.Response().Header().Set(name, value)
 	}

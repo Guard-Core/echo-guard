@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -28,7 +28,7 @@ func wsTestEngine(t *testing.T, mutate func(*guardcore.SecurityConfig)) *guardco
 	return engine
 }
 
-func wsUpgradeContext(t *testing.T, remote string, mutate func(r *http.Request)) echolib.Context {
+func wsUpgradeContext(t *testing.T, remote string, mutate func(r *http.Request)) *echolib.Context {
 	t.Helper()
 	r := httptest.NewRequest(http.MethodGet, "/ws", nil)
 	r.RemoteAddr = remote

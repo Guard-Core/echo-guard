@@ -1,11 +1,11 @@
 ---
 name: echo-guard
-description: Use when wiring guard-core-go security into a Go Echo service, or when working in github.com/rennf93/echo-guard: build the middleware with guardecho.New(engine, opts...) (package echo, alias it to avoid clashing with github.com/labstack/echo/v4), tune WithMaxBodyBytes (default 262144) and WithLogger, attach route identity with WithRouteID on the request context (c.SetRequest), understand requestShim adaptation of echo.Context to guardcore.Request including the bounded body prefix scan, idempotent Body(), and replay so handlers still receive the full stream, exact verdict translation into c.Response() writes with the chain stopped by not calling next(c) (Echo has no Abort call), fail-closed 500 on engine malfunction, and Redis-backed integration tests via REDIS_HOST and go test -tags integration.
+description: Use when wiring guard-core-go security into a Go Echo service, or when working in github.com/rennf93/echo-guard: build the middleware with guardecho.New(engine, opts...) (package echo, alias it to avoid clashing with github.com/labstack/echo/v5), tune WithMaxBodyBytes (default 262144) and WithLogger, attach route identity with WithRouteID on the request context (c.SetRequest), understand requestShim adaptation of echo.Context to guardcore.Request including the bounded body prefix scan, idempotent Body(), and replay so handlers still receive the full stream, exact verdict translation into c.Response() writes with the chain stopped by not calling next(c) (Echo has no Abort call), fail-closed 500 on engine malfunction, and Redis-backed integration tests via REDIS_HOST and go test -tags integration.
 ---
 
 # echo-guard
 
-Echo middleware adapter for [guard-core-go](https://github.com/Guard-Core/guard-core-go). Translates `echo.Context` into the guardcore request surface, runs the engine, and translates verdicts to exact Echo responses (status, headers, body, then stop the chain). Contains no security logic itself. Module: `github.com/rennf93/echo-guard`, Go `1.25.0`, released at `v1.1.0`.
+Echo middleware adapter for [guard-core-go](https://github.com/Guard-Core/guard-core-go). Translates `echo.Context` into the guardcore request surface, runs the engine, and translates verdicts to exact Echo responses (status, headers, body, then stop the chain). Contains no security logic itself. Module: `github.com/rennf93/echo-guard/v2`, Go `1.26.0`, Echo v5 (v2.0.0; Echo v4 users stay on the v1.x line).
 
 ## Quick Reference
 
@@ -22,16 +22,16 @@ Behavior contract: the engine sees at most `MaxBodyBytes` of the body prefix; pa
 ## Installation
 
 ```sh
-go get github.com/rennf93/echo-guard@v1.1.0 github.com/rennf93/guard-core-go/v4@v4.0.5-0.20260926230539-e39ac203568b
+go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.1
 ```
 
-The package name is `echo`, which collides with `github.com/labstack/echo/v4`, so import the adapter with an alias:
+The package name is `echo`, which collides with `github.com/labstack/echo/v5`, so import the adapter with an alias:
 
 ```go
 import (
-    echolib "github.com/labstack/echo/v4"
+    echolib "github.com/labstack/echo/v5"
     guardcore "github.com/rennf93/guard-core-go/v4/guardcore"
-    guardecho "github.com/rennf93/echo-guard"
+    guardecho "github.com/rennf93/echo-guard/v2"
 )
 ```
 
@@ -48,7 +48,7 @@ if err != nil { log.Fatal(err) }
 
 router := echolib.New()
 router.Use(guard)
-router.GET("/", func(c echolib.Context) error { return c.String(200, "ok") })
+router.GET("/", func(c *echolib.Context) error { return c.String(200, "ok") })
 log.Fatal(router.Start(":8080"))
 ```
 
@@ -99,7 +99,7 @@ func WithRouteID(ctx context.Context, routeID string) context.Context
 
 ## Footguns
 
-- Package name collision: `github.com/rennf93/echo-guard` and `github.com/labstack/echo/v4` are both package `echo`; always alias the adapter (for example `guardecho`).
+- Package name collision: `github.com/rennf93/echo-guard/v2` and `github.com/labstack/echo/v5` are both package `echo`; always alias the adapter (for example `guardecho`).
 - The engine only scans the first `MaxBodyBytes` bytes. A malicious marker beyond the bound is not detected and the request passes; verify bounds when a route accepts large payloads.
 - `WithMaxBodyBytes(-1)` and `WithLogger(nil)` are silently ignored, not errors. Guard against typos that drop real configuration.
 - Client identity comes from `RemoteAddr`, never `c.RealIP()`. Do not "fix" this in the adapter; proxy trust is core configuration territory.

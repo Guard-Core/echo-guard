@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -39,7 +39,7 @@ func TestParityModifierRewritesPassThroughResponse(t *testing.T) {
 			return resp
 		}
 	})
-	rec := serveWith(t, engine, func(c echolib.Context) error {
+	rec := serveWith(t, engine, func(c *echolib.Context) error {
 		c.Response().Header().Add("Set-Cookie", "a=1")
 		c.Response().Header().Add("Set-Cookie", "b=2")
 		c.Response().Header().Set("Content-Length", "5")
@@ -83,7 +83,7 @@ func TestParityModifierRunsAfterCORSAndCORSIsReapplied(t *testing.T) {
 	})
 	r := httptest.NewRequest("GET", "/api", nil)
 	r.Header.Set("Origin", "https://app.example")
-	rec := serveWith(t, engine, func(c echolib.Context) error { return c.String(200, "ok") }, r)
+	rec := serveWith(t, engine, func(c *echolib.Context) error { return c.String(200, "ok") }, r)
 	if rec.Header().Get("X-Saw-CORS") != "yes" {
 		t.Fatalf("the modifier must see the CORS headers: %v", rec.Header())
 	}
@@ -99,7 +99,7 @@ func TestParityModifierAppliesToGuardBlockedResponse(t *testing.T) {
 			return resp
 		}
 	})
-	rec := serveWith(t, engine, func(c echolib.Context) error { return c.String(200, "ok") },
+	rec := serveWith(t, engine, func(c *echolib.Context) error { return c.String(200, "ok") },
 		httptest.NewRequest("GET", "/api?"+xssVector, nil))
 	if rec.Code != 400 || rec.Header().Get("X-Modified") != "yes" {
 		t.Fatalf("guard responses carry the modifier, got %d %v", rec.Code, rec.Header())
@@ -116,7 +116,7 @@ func TestParityModifierStatusAndBodyFeedReturnRules(t *testing.T) {
 		}
 	})
 	for i := 0; i < 2; i++ {
-		rec := serveWith(t, engine, func(c echolib.Context) error { return c.String(200, "a secret leaked here") },
+		rec := serveWith(t, engine, func(c *echolib.Context) error { return c.String(200, "a secret leaked here") },
 			httptest.NewRequest("GET", "/report", nil))
 		if rec.Code != 200 || rec.Body.String() != "a secret leaked here" {
 			t.Fatalf("held response must reach the client intact, got %d %q", rec.Code, rec.Body.String())
@@ -139,7 +139,7 @@ func TestParityHeldBodyBeyondBudgetIsNotScanned(t *testing.T) {
 	big := []byte(strings.Repeat("a", 2048))
 	copy(big[1500:], "beyond-the-budget")
 	for i := 0; i < 3; i++ {
-		rec := serveWith(t, engine, func(c echolib.Context) error { _, err := c.Response().Write(big); return err },
+		rec := serveWith(t, engine, func(c *echolib.Context) error { _, err := c.Response().Write(big); return err },
 			httptest.NewRequest("GET", "/report", nil))
 		if rec.Code != 200 || rec.Body.Len() != 2048 {
 			t.Fatalf("the client must get the whole body, got %d with %d bytes", rec.Code, rec.Body.Len())
@@ -156,9 +156,9 @@ func TestParityHeldBodyBeyondBudgetIsNotScanned(t *testing.T) {
 // status instead of the not-yet-written default.
 func TestParityHandlerErrorStatusReachesEngine(t *testing.T) {
 	for name, handler := range map[string]echolib.HandlerFunc{
-		"HTTPError":    func(c echolib.Context) error { return echolib.NewHTTPError(http.StatusInternalServerError, "boom") },
-		"plain error":  func(c echolib.Context) error { return errors.New("boom") },
-		"explicit 500": func(c echolib.Context) error { return c.NoContent(http.StatusInternalServerError) },
+		"HTTPError":    func(c *echolib.Context) error { return echolib.NewHTTPError(http.StatusInternalServerError, "boom") },
+		"plain error":  func(c *echolib.Context) error { return errors.New("boom") },
+		"explicit 500": func(c *echolib.Context) error { return c.NoContent(http.StatusInternalServerError) },
 	} {
 		t.Run(name, func(t *testing.T) {
 			engine := newTestEngine(t, func(c *guardcore.SecurityConfig) {
@@ -186,7 +186,7 @@ func TestParityHandlerErrorWithModifierIsHeldAndModified(t *testing.T) {
 			return resp
 		}
 	})
-	rec := serveWith(t, engine, func(c echolib.Context) error { return echolib.NewHTTPError(http.StatusTeapot, "short") },
+	rec := serveWith(t, engine, func(c *echolib.Context) error { return echolib.NewHTTPError(http.StatusTeapot, "short") },
 		httptest.NewRequest("GET", "/tea", nil))
 	if rec.Code != http.StatusTeapot || rec.Header().Get("X-Seen-Status") != "I'm a teapot" {
 		t.Fatalf("the modifier must see the error status, got %d %v", rec.Code, rec.Header())
@@ -202,7 +202,7 @@ func TestParityAddressHeadersNeedNoManualExclusion(t *testing.T) {
 	r.Host = "169.254.169.254"
 	r.Header.Set("X-Forwarded-For", "10.0.0.1")
 	r.Header.Set("Origin", "http://localhost")
-	rec := serveWith(t, engine, func(c echolib.Context) error { return c.String(200, "ok") }, r)
+	rec := serveWith(t, engine, func(c *echolib.Context) error { return c.String(200, "ok") }, r)
 	if rec.Code != 200 {
 		t.Fatalf("address headers must not be flagged by default, got %d %q", rec.Code, rec.Body.String())
 	}

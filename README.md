@@ -80,7 +80,7 @@ Go modules published via GitHub releases. **Production-ready.**
 | [guard-core-go](https://github.com/Guard-Core/guard-core-go) | Go engine | [![release](https://img.shields.io/github/v/tag/Guard-Core/guard-core-go?label=tag)](https://github.com/Guard-Core/guard-core-go/releases) |
 | [nethttp-guard](https://github.com/Guard-Core/nethttp-guard) | net/http adapter | [![release](https://img.shields.io/github/v/tag/Guard-Core/nethttp-guard?label=tag)](https://github.com/Guard-Core/nethttp-guard/releases) |
 | [gin-guard](https://github.com/Guard-Core/gin-guard) | Gin adapter | [![release](https://img.shields.io/github/v/tag/Guard-Core/gin-guard?label=tag)](https://github.com/Guard-Core/gin-guard/releases) |
-| [echo-guard](https://github.com/Guard-Core/echo-guard) | Echo (v4) adapter | [![release](https://img.shields.io/github/v/tag/Guard-Core/echo-guard?label=tag)](https://github.com/Guard-Core/echo-guard/releases) |
+| [echo-guard](https://github.com/Guard-Core/echo-guard) | Echo (v5) adapter | [![release](https://img.shields.io/github/v/tag/Guard-Core/echo-guard?label=tag)](https://github.com/Guard-Core/echo-guard/releases) |
 | [fiber-guard](https://github.com/Guard-Core/fiber-guard) | Fiber (v3) adapter | [![release](https://img.shields.io/github/v/tag/Guard-Core/fiber-guard?label=tag)](https://github.com/Guard-Core/fiber-guard/releases) |
 | [guard-agent-go](https://github.com/Guard-Core/guard-agent-go) | Telemetry agent | [![release](https://img.shields.io/github/v/tag/Guard-Core/guard-agent-go?label=tag)](https://github.com/Guard-Core/guard-agent-go/releases) |
 
@@ -134,7 +134,7 @@ ___
 
 ## Features
 
-- **The full guard-core-go engine pipeline** over Echo (v4) requests: rate limiting, IP policy, payload inspection across 19 attack categories, auto-banning
+- **The full guard-core-go engine pipeline** over Echo (v5) requests: rate limiting, IP policy, payload inspection across 19 attack categories, auto-banning
 - **Security headers and behavioral response rules** applied on the pass-through path
 - **Bounded body buffering** with replay for downstream handlers
 - **Fail-closed on engine malfunction** - a broken engine never turns into an open gate
@@ -152,13 +152,13 @@ ___
 
 ## Install
 
-Released: `v1.5.0` on the Go module proxy, flooring the guard-core-go v4.4.0 reference-alignment engine:
+Echo v5 support is the `/v2` module (v2.0.0), on guard-core-go v4.4.1. Echo v4 users stay on v1.x (`go get github.com/rennf93/echo-guard@v1.5.0`):
 
 ```
-go get github.com/rennf93/echo-guard@v1.5.0 github.com/rennf93/guard-core-go/v4@v4.4.0
+go get github.com/rennf93/echo-guard/v2@v2.0.0 github.com/rennf93/guard-core-go/v4@v4.4.1
 ```
 
-The package name is `echo`, which collides with `github.com/labstack/echo/v4` (also package `echo`), so import the adapter with an explicit alias such as `guardecho`.
+The package name is `echo`, which collides with `github.com/labstack/echo/v5` (also package `echo`), so import the adapter with an explicit alias such as `guardecho`.
 
 ## Usage
 
@@ -168,9 +168,9 @@ package main
 import (
 	"log"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	guardcore "github.com/rennf93/guard-core-go/v4/guardcore"
-	guardecho "github.com/rennf93/echo-guard"
+	guardecho "github.com/rennf93/echo-guard/v2"
 )
 
 func main() {
@@ -190,7 +190,7 @@ func main() {
 
 	router := echolib.New()
 	router.Use(guard)
-	router.GET("/", func(c echolib.Context) error {
+	router.GET("/", func(c *echolib.Context) error {
 		return c.String(200, "ok")
 	})
 
@@ -206,7 +206,7 @@ Echo's middleware contract has no explicit abort call: a verdict is written to `
 
 ## Development
 
-The middleware consumes the core as a normal module dependency, currently pinned to the guard-core-go master surface (`v4.0.5-0.20260926230539-e39ac203568b`, the behavior-rules / geo-lifecycle / route-detection-exclusions wave); no `replace` directive is used or needed. For cross-repo work on the core itself, add a temporary local `replace` line in your own checkout and drop it before committing.
+The middleware consumes the core as a normal module dependency, currently pinned to guard-core-go `v4.4.1`; no `replace` directive is used or needed. For cross-repo work on the core itself, add a temporary local `replace` line in your own checkout and drop it before committing.
 
 Integration tests run against real Redis:
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	"github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -35,7 +35,7 @@ type requestShim struct {
 
 var _ guardcore.Request = (*requestShim)(nil)
 
-func newRequestShim(c echolib.Context, maxBodyBytes int64) *requestShim {
+func newRequestShim(c *echolib.Context, maxBodyBytes int64) *requestShim {
 	if maxBodyBytes <= 0 {
 		maxBodyBytes = DefaultMaxBodyBytes
 	}

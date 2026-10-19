@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 
-	echolib "github.com/labstack/echo/v4"
+	echolib "github.com/labstack/echo/v5"
 	guardcore "github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -40,18 +40,18 @@ func Register(e *echolib.Echo, app *App) {
 
 // health and ready are excluded from the pipeline (config.ExcludePaths), so
 // probes and orchestrator health checks never trip the guard.
-func (a *App) health(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{"status": "ok"})
+func (a *App) health(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{"status": "ok"})
 }
 
-func (a *App) ready(c echolib.Context) error {
+func (a *App) ready(c *echolib.Context) error {
 	// Extend this with real dependency probes (Redis PING, cloud range
 	// warmup) for your deployment.
-	return c.JSON(http.StatusOK, echolib.Map{"status": "ready"})
+	return c.JSON(http.StatusOK, map[string]any{"status": "ready"})
 }
 
-func (a *App) info(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{
+func (a *App) info(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{
 		"app":     "echo-guard advanced example",
 		"routes":  []string{"/health", "/ready", "/echo", "/rate/burst", "/admin/*", "/test/*"},
 		"engine":  "guardcore",
@@ -61,12 +61,12 @@ func (a *App) info(c echolib.Context) error {
 
 // echo proves the adapter's body contract: the engine scans a bounded prefix
 // and the replay wrapper hands the handler the full, untouched body.
-func (a *App) echo(c echolib.Context) error {
+func (a *App) echo(c *echolib.Context) error {
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echolib.Map{"error": "unreadable body"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": "unreadable body"})
 	}
-	return c.JSON(http.StatusOK, echolib.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"echo":   true,
 		"method": c.Request().Method,
 		"path":   c.Request().URL.Path,
@@ -76,8 +76,8 @@ func (a *App) echo(c echolib.Context) error {
 
 // burst is limited by config.EndpointRateLimits (5 requests per 60 seconds),
 // which this port enforces by exact request path.
-func (a *App) burst(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{
+func (a *App) burst(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{
 		"endpoint": "/rate/burst",
 		"limit":    "5 requests per 60 seconds",
 	})
@@ -87,21 +87,21 @@ func (a *App) burst(c echolib.Context) error {
 // RequiredHeaders guard (see cmd/server/main.go): the engine itself rejects
 // calls missing the admin token with a 400 before these handlers run.
 
-func (a *App) bannedCount(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{
+func (a *App) bannedCount(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{
 		"banned_ips":      a.Engine.Ban.BannedIPCount(),
 		"banned_networks": a.Engine.Ban.BannedNetworkCount(),
 	})
 }
 
-func (a *App) ban(c echolib.Context) error {
+func (a *App) ban(c *echolib.Context) error {
 	var body struct {
 		IP      string `json:"ip"`
 		Seconds int    `json:"seconds"`
 		Reason  string `json:"reason"`
 	}
 	if err := c.Bind(&body); err != nil || body.IP == "" {
-		return c.JSON(http.StatusBadRequest, echolib.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error": `body must be {"ip": ..., "seconds": ..., "reason": ...}`,
 		})
 	}
@@ -114,25 +114,25 @@ func (a *App) ban(c echolib.Context) error {
 	created, err := a.Engine.Ban.Ban(body.IP, body.Seconds, body.Reason)
 	if err != nil {
 		log.Printf("admin ban %s failed: %v", body.IP, err)
-		return c.JSON(http.StatusInternalServerError, echolib.Map{"error": "ban failed"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": "ban failed"})
 	}
-	return c.JSON(http.StatusOK, echolib.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"ip": body.IP, "seconds": body.Seconds, "created": created,
 	})
 }
 
-func (a *App) unban(c echolib.Context) error {
+func (a *App) unban(c *echolib.Context) error {
 	var body struct {
 		IP string `json:"ip"`
 	}
 	if err := c.Bind(&body); err != nil || body.IP == "" {
-		return c.JSON(http.StatusBadRequest, echolib.Map{"error": `body must be {"ip": ...}`})
+		return c.JSON(http.StatusBadRequest, map[string]any{"error": `body must be {"ip": ...}`})
 	}
 	if err := a.Engine.Ban.Unban(body.IP); err != nil {
 		log.Printf("admin unban %s failed: %v", body.IP, err)
-		return c.JSON(http.StatusInternalServerError, echolib.Map{"error": "unban failed"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": "unban failed"})
 	}
-	return c.JSON(http.StatusOK, echolib.Map{"ip": body.IP, "status": "unbanned"})
+	return c.JSON(http.StatusOK, map[string]any{"ip": body.IP, "status": "unbanned"})
 }
 
 // attackEcho handlers intentionally echo hostile payloads; the guard blocks
@@ -140,6 +140,6 @@ func (a *App) unban(c echolib.Context) error {
 // was bypassed (defense in depth: do not log or store the payload).
 // Payloads ride in query parameters because this port does not scan request
 // bodies yet (see the engine port's roadmap notes).
-func (a *App) attackEcho(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{"detected": false})
+func (a *App) attackEcho(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{"detected": false})
 }

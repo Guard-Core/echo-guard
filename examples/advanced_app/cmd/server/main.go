@@ -13,13 +13,13 @@ import (
 	"syscall"
 	"time"
 
-	echolib "github.com/labstack/echo/v4"
-	echomiddleware "github.com/labstack/echo/v4/middleware"
-	guardecho "github.com/rennf93/echo-guard"
+	echolib "github.com/labstack/echo/v5"
+	echomiddleware "github.com/labstack/echo/v5/middleware"
+	guardecho "github.com/rennf93/echo-guard/v2"
 	guardcore "github.com/rennf93/guard-core-go/v4/guardcore"
 
-	"github.com/rennf93/echo-guard/examples/advanced_app/internal/config"
-	"github.com/rennf93/echo-guard/examples/advanced_app/internal/routes"
+	"github.com/rennf93/echo-guard/v2/examples/advanced_app/internal/config"
+	"github.com/rennf93/echo-guard/v2/examples/advanced_app/internal/routes"
 )
 
 func main() {
@@ -78,7 +78,6 @@ func main() {
 	}
 
 	router := echolib.New()
-	router.HideBanner = true
 	// Recovery stays outermost so handler panics are contained; the mapper
 	// and the guard follow so blocked requests never reach another handler.
 	router.Use(echomiddleware.Recover())
@@ -118,7 +117,7 @@ func main() {
 // route pattern before the guard runs.
 func attachRouteIDs(routeIDs map[string]string) echolib.MiddlewareFunc {
 	return func(next echolib.HandlerFunc) echolib.HandlerFunc {
-		return func(c echolib.Context) error {
+		return func(c *echolib.Context) error {
 			if routeID, ok := routeIDs[c.Path()]; ok {
 				c.SetRequest(c.Request().WithContext(guardecho.WithRouteID(c.Request().Context(), routeID)))
 			}

@@ -11,15 +11,18 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
-	echolib "github.com/labstack/echo/v4"
-	echomiddleware "github.com/labstack/echo/v4/middleware"
-	guardecho "github.com/rennf93/echo-guard"
+	echolib "github.com/labstack/echo/v5"
+	echomiddleware "github.com/labstack/echo/v5/middleware"
+	guardecho "github.com/rennf93/echo-guard/v2"
 	guardcore "github.com/rennf93/guard-core-go/v4/guardcore"
 )
 
@@ -129,7 +132,6 @@ func main() {
 	}
 
 	router := echolib.New()
-	router.HideBanner = true
 	// Recovery stays outermost so handler panics are contained; the guard
 	// runs next so blocked requests never reach another middleware. Echo has
 	// no explicit abort call: a verdict is written to c.Response() and the
@@ -143,23 +145,28 @@ func main() {
 	router.GET("/search", search)
 
 	log.Println("simple_app listening on :8080")
-	log.Fatal(router.Start(":8080"))
+	sc := echolib.StartConfig{Address: ":8080", HideBanner: true}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err := sc.Start(ctx, router); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func info(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{
+func info(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{
 		"app":       "echo-guard simple_app",
 		"endpoints": []string{"/health", "/echo (POST)", "/rate/strict", "/search?q="},
 	})
 }
 
-func health(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{"status": "ok"})
+func health(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{"status": "ok"})
 }
 
 // echo proves the adapter's body contract: the engine scans a bounded prefix
 // and the replay wrapper hands the handler the full, untouched body.
-func echo(c echolib.Context) error {
+func echo(c *echolib.Context) error {
 	if c.Request().Method != http.MethodPost {
 		return c.String(http.StatusMethodNotAllowed, "method not allowed")
 	}
@@ -167,17 +174,17 @@ func echo(c echolib.Context) error {
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "unreadable body")
 	}
-	return c.JSON(http.StatusOK, echolib.Map{"echo": true, "bytes": len(body)})
+	return c.JSON(http.StatusOK, map[string]any{"echo": true, "bytes": len(body)})
 }
 
-func strict(c echolib.Context) error {
-	return c.JSON(http.StatusOK, echolib.Map{
+func strict(c *echolib.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{
 		"endpoint": "/rate/strict",
 		"limit":    "1 request per 10 seconds",
 	})
 }
 
-func search(c echolib.Context) error {
+func search(c *echolib.Context) error {
 	q := c.QueryParam("q")
 	if strings.ContainsAny(q, "<'") {
 		// The engine should have blocked requests that reach this handler
@@ -185,5 +192,5 @@ func search(c echolib.Context) error {
 		// or log the payload.
 		return c.String(http.StatusForbidden, "Blocked by echo-guard")
 	}
-	return c.JSON(http.StatusOK, echolib.Map{"query": q, "results": []string{}})
+	return c.JSON(http.StatusOK, map[string]any{"query": q, "results": []string{}})
 }
