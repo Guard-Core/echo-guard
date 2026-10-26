@@ -3,7 +3,7 @@ module github.com/rennf93/echo-guard/v2
 go 1.26.0
 
 require (
-	github.com/labstack/echo/v5 v5.4.1
+	github.com/labstack/echo/v5 v5.4.2
 	github.com/rennf93/guard-core-go/v4 v4.4.1
 )
 
